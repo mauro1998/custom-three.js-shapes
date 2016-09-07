@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Document</title>
+<style>
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+}
+
+</style>
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r80/three.js"></script>
+<script>
+
+var geometries, materials, meshes;
+var node, width, height;
+var scene, camera, renderer, controls;
+var axes;
+var vertices = [];
+var shapes = [];
+var targets = [];
+
+geometries = {};
+materials = {};
+meshes = {};
+
+node = document.body
+width = node.clientWidth;
+height = node.clientHeight;
+
+scene = new THREE.Scene();
+camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+renderer = new THREE.WebGLRenderer({ antialias: true });
+
+// meshes.axes = new THREE.AxisHelper(200);
+meshes.ambientLight = new THREE.AmbientLight(0xFFFFFF);
+
+for (var mesh in meshes) {
+  if (meshes.hasOwnProperty(mesh)) scene.add(meshes[mesh]);
+}
+
+renderer.setSize(width, height);
+renderer.setClearColor(0x000000);
+camera.position.set(0, 0, 200);
+
+node.appendChild(renderer.domElement);
+renderer.domElement.addEventListener('click', onClick);
+renderer.domElement.addEventListener('dblclick', function(e) {
+  drawShape(vertices, getClickCoordinates(e));
+});
+
+function clearPoints() {
+  for (var i = 0; i < scene.children.length; i++) {
+    var child = scene.children[i];
+    if (child instanceof THREE.Mesh && child.name.indexOf('point') > -1) {
+      child.geometry.dispose();
+      child.material.dispose();
+      scene.remove(child);
+    }
+  }
+}
+
+window.onresize = onResize;
+animate();
+
+function getClickCoordinates(e) {
+  return new THREE.Vector3(
+    (e.clientX / width) * 2 - 1,
+    - (e.clientY / height) * 2 + 1,
+    0
+  );
+}
+
+function onClick(e) {
+  var vector = getClickCoordinates(e);
+  vector.unproject(camera);
+  var direction = vector.sub(camera.position).normalize();
+  var distance = - camera.position.z / direction.z;
+  var position = camera.position.clone().add(direction.multiplyScalar(distance));
+  var pointGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+  var pointMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
+  var point = new THREE.Mesh(pointGeometry, pointMaterial);
+  point.name = 'point' + Math.floor(Math.random() * 1000);
+  vertices.push(position);
+  point.position.set(position.x, position.y, position.z);
+  scene.add(point);
+}
+
+function drawShape(v, pos) {
+  if (v.length > 2) {
+    var shape = new THREE.Shape(v);
+    vertices = [];
+    var geometry = new THREE.ShapeGeometry(shape);
+    var material = new THREE.MeshLambertMaterial({ color: 0xFFFFFF, morphTargets: true });
+
+    if (shapes.length !== targets.length) {
+      var target = targets[targets.length - 1];
+
+      geometry.morphTargets.push({
+        name: 'morph1',
+        vertices: target.geometry.vertices
+      });
+
+      geometry.computeMorphNormals();
+    }
+
+    var mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+    mesh.position.set(pos.x, pos.y, pos.z);
+    clearPoints();
+
+    if (shapes.length === targets.length) targets.push(mesh);
+    else shapes.push(mesh);
+  }
+}
+
+function animateMorphs() {
+  for (var i = 0; i < shapes.length; i++) {
+    var shape = shapes[i];
+    if (shape.geometry.morphTargets.length) {
+      var influence = Math.sin(Date.now() * 0.001);
+      console.log(influence);
+      shape.morphTargetInfluences[0] = influence;
+    }
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  animateMorphs();
+  renderer.render(scene, camera);
+}
+
+function onResize() {
+  width = node.clientWidth;
+  height = node.clientHeight;
+  renderer.setSize(width, height);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+}
+
+</script>
+</body>
+</html>

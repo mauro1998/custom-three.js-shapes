@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Document</title>
+<style>
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+}
+
+</style>
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r80/three.js"></script>
+<script>
+
+var lines = [];
+var node, width, height;
+var scene, camera, renderer, controls;
+var MAX_POINTS = 500;
+var positions, drawCount, points = [];
+
+node = document.body;
+width = node.clientWidth;
+height = node.clientHeight;
+
+scene = new THREE.Scene();
+camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+renderer = new THREE.WebGLRenderer({ antialias: true });
+
+renderer.setSize(width, height);
+renderer.setClearColor(0x000000);
+camera.position.set(0, 0, 200);
+
+node.appendChild(renderer.domElement);
+renderer.domElement.addEventListener('mousedown', onMouseDown, false);
+
+window.onresize = onResize;
+animate();
+
+function startDrawingShape() {
+  var line = {};
+  line.points = [];
+  line.geometry = new THREE.BufferGeometry();
+  line.material = new THREE.LineBasicMaterial({ color: 0xFFFFFF, linewidth: 2 });
+  line.positions = new Float32Array(MAX_POINTS * 3);
+  line.geometry.addAttribute('position', new THREE.BufferAttribute(line.positions, 3));
+  line.drawCount = 2;
+  line.geometry.setDrawRange(0, drawCount);
+  line.mesh = new THREE.Line(line.geometry, line.material);
+  lines.push(line);
+  scene.add(line.mesh);
+}
+
+function getCurrentLine() {
+  var index = lines.length ? lines.length - 1 : 0;
+  return lines[index];
+}
+
+function updateLinePositions() {
+  var line = getCurrentLine();
+  var positions = line.geometry.attributes.position.array;
+  for (var i = 0, j = 0; i < line.points.length; i++) {
+    positions[j++] = line.points[i].x;
+    positions[j++] = line.points[i].y;
+    positions[j++] = line.points[i].z;
+  }
+}
+
+function getClickCoordinates(e) {
+  return new THREE.Vector3(
+    (e.clientX / width) * 2 - 1,
+    - (e.clientY / height) * 2 + 1,
+    0
+  );
+}
+
+function onMouseDown(e) {
+  if (e.which === 3) return;
+  startDrawingShape();
+  renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+  renderer.domElement.addEventListener('mouseup', onMouseUp, false);
+}
+
+function onMouseMove(e) {
+  var line = getCurrentLine();
+  var vector = getClickCoordinates(e);
+  vector.unproject(camera);
+  line.points.push(vector);
+}
+
+function onMouseUp() {
+  renderer.domElement.removeEventListener('mousemove', onMouseMove, false);
+}
+
+function drawShape(v, pos) {
+  if (v.length > 2) {
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  var line = getCurrentLine();
+  if (line) {
+    line.drawCount = line.points.length;
+    line.geometry.setDrawRange(0, line.drawCount);
+    updateLinePositions();
+    line.geometry.attributes.position.needsUpdate = true;
+    renderer.render(scene, camera);
+  }
+}
+
+function onResize() {
+  width = node.clientWidth;
+  height = node.clientHeight;
+  renderer.setSize(width, height);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+}
+
+</script>
+</body>
+</html>
