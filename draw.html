@@ -55,6 +55,7 @@ function startDrawingShape() {
   line.drawCount = 2;
   line.geometry.setDrawRange(0, drawCount);
   line.mesh = new THREE.Line(line.geometry, line.material);
+  line.canUpdate = true;
   lines.push(line);
   scene.add(line.mesh);
 }
@@ -98,17 +99,35 @@ function onMouseMove(e) {
 
 function onMouseUp() {
   renderer.domElement.removeEventListener('mousemove', onMouseMove, false);
+  var line = getCurrentLine();
+  line.points.push(line.points[0].clone());
+
+  var vertices = [];
+
+  for (var i = 0; i < line.points.length; i++) {
+    var vertex = line.points[i].clone();
+    var direction = vertex.sub(camera.position).normalize();
+    var distance = - camera.position.z / direction.z;
+    vertices.push(camera.position.clone().add(direction.multiplyScalar(distance)));
+  }
+  console.log(vertices);
+  drawShape(vertices, vertices[0]);
 }
 
-function drawShape(v, pos) {
-  if (v.length > 2) {
+function drawShape(vertices, position) {
+  if (vertices.length > 2) {
+    var shape = new THREE.Shape(vertices);
+    var geometry = new THREE.ShapeGeometry(shape);
+    var material = new THREE.MeshBasicMaterial({ color: Math.random() * 0xFFFFFF });
+    var mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
   }
 }
 
 function animate() {
   requestAnimationFrame(animate);
   var line = getCurrentLine();
-  if (line) {
+  if (line && line.canUpdate) {
     line.drawCount = line.points.length;
     line.geometry.setDrawRange(0, line.drawCount);
     updateLinePositions();
