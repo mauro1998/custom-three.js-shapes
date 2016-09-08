@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Document</title>
+
+<style>
+
+*{
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+}
+
+</style>
+
+</head>
+<body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r80/three.js"></script>
+<script src="freeStyleDrawer.js"></script>
+
+<script>
+var scene, camera, renderer;
+var node, width, height;
+var freeStyleDrawer, options;
+
+node = document.body;
+width = node.clientWidth;
+height = node.clientHeight;
+
+scene = new THREE.Scene();
+camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(width, height);
+renderer.setClearColor(0x000000);
+camera.position.set(0, 0, 200);
+
+options = {
+  scene: scene,
+  camera: camera,
+  domElement: renderer.domElement,
+  width: width,
+  height: height,
+  line: {
+    color: 0xFFFFFF,
+    linewidth: 2
+  }
+};
+
+freeStyleDrawer = new THREE.FreeStyleDrawer(options);
+freeStyleDrawer.init();
+
+node.appendChild(renderer.domElement);
+window.onresize = onResize;
+animate();
+
+function animate() {
+  requestAnimationFrame(animate);
+  freeStyleDrawer.keepDrawing();
+  renderer.render(scene, camera);
+}
+
+function onResize() {
+  width = node.clientWidth;
+  height = node.clientHeight;
+  renderer.setSize(width, height);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+}
+</script>
+
+</body>
+</html>

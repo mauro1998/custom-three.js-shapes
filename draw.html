@@ -110,7 +110,6 @@ function onMouseUp() {
     var distance = - camera.position.z / direction.z;
     vertices.push(camera.position.clone().add(direction.multiplyScalar(distance)));
   }
-  console.log(vertices);
   drawShape(vertices, vertices[0]);
 }
 
